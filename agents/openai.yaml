@@ -1,0 +1,3 @@
+display_name: Chaoxing PPT Crawler
+short_description: Download Chaoxing PPT images into bookmarked PDFs.
+default_prompt: Download all PPT/image courseware from this Chaoxing course URL and generate a single PDF with section bookmarks.
