@@ -1,0 +1,6 @@
+edge_chaoxing_profile/
+chaoxing_courseware/
+node_modules/
+__pycache__/
+*.pyc
+*.log
