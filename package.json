@@ -1,0 +1,21 @@
+{
+  "name": "chaoxing-ppt-crawler-skill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Install the Chaoxing PPT Crawler skill for Codex or Claude.",
+  "bin": {
+    "chaoxing-ppt-crawler-skill": "./bin/install.js"
+  },
+  "scripts": {
+    "install-skill": "node ./bin/install.js --all"
+  },
+  "keywords": [
+    "codex-skill",
+    "claude-skill",
+    "chaoxing",
+    "xuexitong",
+    "ppt",
+    "pdf"
+  ],
+  "license": "MIT"
+}

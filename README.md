@@ -1,16 +1,47 @@
-# Chaoxing PPT Crawler
+# Chaoxing PPT Crawler Skill
 
-Download PPT/document image pages from a Chaoxing/Xuexitong course page and build a single bookmarked PDF.
+Chaoxing PPT Crawler is a small automation project and AI skill for downloading PPT/document image pages from Chaoxing/Xuexitong course pages and generating a single PDF with section bookmarks.
 
-This project is packaged as a Codex skill. It is useful when a Chaoxing course page requires browser login and the courseware is rendered as image pages instead of directly downloadable PPT files.
+It is designed for courses where the teaching materials are shown as image pages instead of directly downloadable PPT files.
 
-## What It Does
+## Features
 
-- Opens workflow support for a logged-in Edge browser session.
-- Reads the Chaoxing course directory through the logged-in session.
-- Skips quiz/test/homework/extension/resource/reading nodes.
-- Downloads PPT/document image pages from normal courseware sections.
-- Generates one total PDF with a bookmark for every section.
+- Uses a logged-in Microsoft Edge session, so it works with courses that require Chaoxing login.
+- Reads the course directory and section names.
+- Skips quizzes, tests, homework, extension resources, and reading-resource nodes.
+- Downloads PPT/document pages rendered as images.
+- Builds one total PDF with bookmarks for each section, for example `2.1 半导体基础知识`.
+- Can be installed as a Codex skill, a Claude skill, or both.
+
+## How It Works
+
+1. Edge is started with a local DevTools debugging port.
+2. You log in to Chaoxing in that Edge window.
+3. The Node.js crawler reads cookies from the local DevTools protocol and uses them in memory.
+4. The crawler fetches the course directory, resolves document/PPT object IDs, and downloads image pages.
+5. The Python PDF builder embeds those images into one PDF and writes PDF outline/bookmark entries for every section.
+
+The crawler does not write cookies to disk.
+
+## Repository Layout
+
+```text
+.
+├── README.md
+├── package.json
+├── bin/
+│   └── install.js
+└── skills/
+    └── chaoxing-ppt-crawler/
+        ├── SKILL.md
+        ├── agents/
+        │   └── openai.yaml
+        └── scripts/
+            ├── crawl_chaoxing_courseware.js
+            └── build_bookmarked_pdf.py
+```
+
+The actual AI skill is `skills/chaoxing-ppt-crawler`.
 
 ## Requirements
 
@@ -19,11 +50,76 @@ This project is packaged as a Codex skill. It is useful when a Chaoxing course p
 - Node.js 22 or newer
 - Python 3.10 or newer
 
-No npm or pip dependencies are required.
+No npm or pip package dependencies are required.
 
-## Quick Start
+## Install as a Skill
 
-1. Start Edge with a temporary debug profile and open the course URL:
+### Option A: npx installer
+
+Install to both Codex and Claude skill directories:
+
+```powershell
+npx github:Zhangzuoyou123/-ppt- --all
+```
+
+Install to Codex only:
+
+```powershell
+npx github:Zhangzuoyou123/-ppt- --codex
+```
+
+Install to Claude only:
+
+```powershell
+npx github:Zhangzuoyou123/-ppt- --claude
+```
+
+Install to a custom directory:
+
+```powershell
+npx github:Zhangzuoyou123/-ppt- --dest "D:\my-skills"
+```
+
+Default target directories:
+
+- Codex: `%USERPROFILE%\.codex\skills`
+- Claude: `%USERPROFILE%\.claude\skills`
+
+The installer also honors:
+
+- `CODEX_HOME`: installs Codex skills under `%CODEX_HOME%\skills`
+- `CLAUDE_SKILLS_DIR`: installs Claude skills directly into that directory
+
+### Option B: manual install
+
+Clone the repo and copy the skill folder:
+
+```powershell
+git clone https://github.com/Zhangzuoyou123/-ppt-.git
+Copy-Item -Recurse -Force ".\-ppt-\skills\chaoxing-ppt-crawler" "$env:USERPROFILE\.codex\skills\chaoxing-ppt-crawler"
+```
+
+For Claude:
+
+```powershell
+Copy-Item -Recurse -Force ".\-ppt-\skills\chaoxing-ppt-crawler" "$env:USERPROFILE\.claude\skills\chaoxing-ppt-crawler"
+```
+
+### Option C: Claude skill add
+
+Some Claude skill managers support installing directly from a GitHub URL, for example:
+
+```powershell
+claude skill add https://github.com/Zhangzuoyou123/-ppt-
+```
+
+If your Claude installer expects a repository root containing `SKILL.md`, use the npx or manual install methods above instead. This repository stores the skill under `skills/chaoxing-ppt-crawler` so the outer README can stay human-facing.
+
+## Manual Tool Usage
+
+You can also run the scripts directly without an AI agent.
+
+1. Start Edge with a temporary debug profile:
 
 ```powershell
 $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
@@ -37,12 +133,12 @@ Start-Process -FilePath $edge -ArgumentList @(
 )
 ```
 
-2. Log in to Chaoxing in that Edge window and keep the window open.
+2. Log in to Chaoxing in that Edge window and keep it open.
 
-3. Download courseware images:
+3. Download courseware image pages:
 
 ```powershell
-node .\scripts\crawl_chaoxing_courseware.js `
+node .\skills\chaoxing-ppt-crawler\scripts\crawl_chaoxing_courseware.js `
   --url "<COURSE_URL>" `
   --out ".\chaoxing_courseware"
 ```
@@ -50,7 +146,7 @@ node .\scripts\crawl_chaoxing_courseware.js `
 4. Build the total bookmarked PDF:
 
 ```powershell
-python .\scripts\build_bookmarked_pdf.py `
+python .\skills\chaoxing-ppt-crawler\scripts\build_bookmarked_pdf.py `
   --manifest ".\chaoxing_courseware\manifest.json" `
   --out ".\chaoxing_courseware\全章节_课件_带小节书签.pdf"
 ```
@@ -59,41 +155,27 @@ python .\scripts\build_bookmarked_pdf.py `
 
 ```text
 chaoxing_courseware/
-  manifest.json
-  images/
-    <section>/
-      001.png
-      002.png
-      ...
-  全章节_课件_带小节书签.pdf
+├── manifest.json
+├── images/
+│   └── <section>/
+│       ├── 001.png
+│       ├── 002.png
+│       └── ...
+└── 全章节_课件_带小节书签.pdf
 ```
 
-The PDF bookmark titles come from the section labels in the course directory, such as `2.1 半导体基础知识`.
+`manifest.json` records section titles, image paths, object IDs, and skipped nodes.
 
-## Filtering
+## Filtering Rules
 
-The crawler skips nodes containing these terms:
+The crawler skips sections whose titles contain:
 
 - Chinese: `测验`, `测试`, `考试`, `作业`, `拓展`, `扩展`, `资源`, `阅读`
 - English: `quiz`, `test`, `exam`, `homework`, `extension`, `resource`, `reading`
 
-## Security Notes
+## Notes
 
-- The crawler reads Chaoxing cookies from the debug Edge session through the local DevTools protocol.
-- Cookies are used in memory only and are not written to disk by the script.
-- Use a temporary Edge profile for crawling.
-
-## Codex Skill Usage
-
-Install this folder under:
-
-```text
-C:\Users\<you>\.codex\skills\chaoxing-ppt-crawler
-```
-
-Then ask Codex:
-
-```text
-Use chaoxing-ppt-crawler to download all PPT images from this Chaoxing course URL and generate one bookmarked PDF.
-```
+- PDF bookmarks are supported.
+- PPTX-style navigation is different from PDF bookmarks; use PowerPoint Sections if you later generate PPTX files.
+- The final PDF is image-based and does not contain selectable text unless OCR is added separately.
 
